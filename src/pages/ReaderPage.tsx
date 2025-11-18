@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
 import { CollaborativeReading } from '../components/CollaborativeReading';
 import { BibleNavDropdown } from '../components/BibleNavDropdown';
+import { VersionNavDropdown } from '../components/VersionNavDropdown';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 type HighlightColor = 'gold' | 'blue' | 'green' | 'orange' | 'red' | null;
@@ -118,7 +119,7 @@ interface ReaderPageProps {
 
 export function ReaderPage({ focusMode, setFocusMode }: ReaderPageProps) {
   const [language, setLanguage] = useState<'english' | 'swahili'>('english');
-  const [version, setVersion] = useState<'KJV' | 'SUV'>('KJV');
+  const [version, setVersion] = useState('KJCV');
   const [currentBook, setCurrentBook] = useState('Genesis');
   const [currentChapter, setCurrentChapter] = useState(1);
   const [verses, setVerses] = useState<Verse[]>(mockVerses);
@@ -136,8 +137,10 @@ export function ReaderPage({ focusMode, setFocusMode }: ReaderPageProps) {
   const [navigationHistory, setNavigationHistory] = useState<{ book: string; chapter: number; verse: number }[]>([]);
   const [collaborativeReadingOpen, setCollaborativeReadingOpen] = useState(false);
   const [chapterNavModalOpen, setChapterNavModalOpen] = useState(false);
+  const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
   
   const navButtonRef = useRef<HTMLButtonElement>(null);
+  const versionButtonRef = useRef<HTMLButtonElement>(null);
 
   const getConnectionTypeStyle = (type: CrossReference['type']) => {
     switch (type) {
@@ -366,37 +369,32 @@ export function ReaderPage({ focusMode, setFocusMode }: ReaderPageProps) {
           <ChevronRight className="w-4 h-4" />
         </button>
 
-        {/* Globe Icon (Standalone) */}
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400">
-          <Globe className="w-4 h-4" />
+        {/* Version Selector (Combined Globe + Version) - Styled like Book Nav */}
+        <div className="relative">
+          <button
+            ref={versionButtonRef}
+            onClick={() => setVersionDropdownOpen(!versionDropdownOpen)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white hover:bg-white/10 transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
+          >
+            <Globe className="w-4 h-4" />
+            <span>{language === 'english' ? 'English' : 'Swahili'} {version}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          </button>
+          
+          {/* Version Dropdown Component */}
+          <VersionNavDropdown
+            isOpen={versionDropdownOpen}
+            onClose={() => setVersionDropdownOpen(false)}
+            currentLanguage={language}
+            currentVersion={version}
+            onNavigate={(lang, ver) => {
+              setLanguage(lang);
+              setVersion(ver);
+              toast.success(`Switched to ${lang === 'english' ? 'English' : 'Swahili'} ${ver}`);
+            }}
+            anchorRef={versionButtonRef}
+          />
         </div>
-
-        {/* Language Dropdown */}
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as 'english' | 'swahili')}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500/50"
-        >
-          <option value="english">English</option>
-          <option value="swahili">Swahili</option>
-        </select>
-
-        {/* Version Dropdown */}
-        <select
-          value={version}
-          onChange={(e) => setVersion(e.target.value as 'KJV' | 'SUV')}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500/50"
-        >
-          {language === 'english' ? (
-            <>
-              <option value="KJV">KJV</option>
-              <option value="NIV">NIV</option>
-              <option value="ESV">ESV</option>
-            </>
-          ) : (
-            <option value="SUV">SUV</option>
-          )}
-        </select>
 
         {/* Spacer to push right controls to the end */}
         <div className="flex-1" />
