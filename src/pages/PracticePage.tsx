@@ -215,7 +215,7 @@ export function PracticePage() {
 
           {/* Practice Mode Selector */}
           <Select value={practiceMode} onValueChange={(value) => setPracticeMode(value as PracticeMode)}>
-            <SelectTrigger className="w-14 sm:w-16 md:w-24 lg:w-40 bg-[#1a2942] border-white/10 text-white text-xs md:text-sm">
+            <SelectTrigger className="w-20 sm:w-24 md:w-28 lg:w-40 bg-[#1a2942] border-white/10 text-white text-xs md:text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

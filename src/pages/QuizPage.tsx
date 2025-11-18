@@ -50,9 +50,24 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
   const [quizComplete, setQuizComplete] = useState(false);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [animationsComplete, setAnimationsComplete] = useState(false);
+
+  // Start timer after 3 seconds on first question, immediately on subsequent questions
+  useEffect(() => {
+    if (currentQuestion === 0) {
+      // First question - wait 3 seconds before starting timer
+      const timer = setTimeout(() => {
+        setAnimationsComplete(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      // Subsequent questions - start timer immediately
+      setAnimationsComplete(true);
+    }
+  }, [currentQuestion]);
 
   useEffect(() => {
-    if (quizComplete || showResult) return;
+    if (quizComplete || showResult || !animationsComplete) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -65,7 +80,7 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentQuestion, quizComplete, showResult]);
+  }, [currentQuestion, quizComplete, showResult, animationsComplete]);
 
   const handleTimeout = () => {
     setAnswers([...answers, false]);
@@ -99,6 +114,11 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
       setSelectedAnswer(null);
       setShowResult(false);
       setTimeLeft(30);
+      setAnimationsComplete(false);
+      // Reset animations complete after a brief delay
+      setTimeout(() => {
+        setAnimationsComplete(true);
+      }, 100); // Start timer almost immediately for subsequent questions
     } else {
       setQuizComplete(true);
     }
@@ -112,6 +132,7 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
     setTimeLeft(30);
     setQuizComplete(false);
     setAnswers([]);
+    setAnimationsComplete(false);
   };
 
   if (quizComplete) {
@@ -220,7 +241,12 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 overflow-hidden">
         <div className="w-full max-w-3xl">
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            className="grid grid-cols-3 gap-4 mb-6"
+          >
             {/* Time Left */}
             <div className="bg-[#1a2942]/80 backdrop-blur-sm border border-white/10 rounded-xl p-3">
               <div className="flex items-center gap-2 text-gray-400 text-xs mb-1">
@@ -251,21 +277,40 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
               </div>
               <div className="text-2xl text-green-400">{score}</div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Progress */}
-          <div className="flex items-center justify-between mb-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex items-center justify-between mb-4"
+          >
             <p className="text-white text-sm">Question {currentQuestion + 1} of {mockQuestions.length}</p>
             <p className="text-gray-400 text-sm">{Math.round((score / Math.max(currentQuestion, 1)) * 100)}% Accuracy</p>
-          </div>
+          </motion.div>
 
           {/* Question Card */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentQuestion}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ 
+                opacity: 1, 
+                scale: timeLeft === 1 ? [1, 0.95, 1] : 1
+              }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{
+                opacity: { duration: 0.5, delay: 0.5 },
+                scale: timeLeft === 1 ? {
+                  duration: 0.3,
+                  ease: "easeInOut"
+                } : {
+                  duration: 0.5,
+                  delay: 0.5,
+                  ease: "easeOut"
+                }
+              }}
               className="bg-[#1a2942]/60 backdrop-blur-sm border border-white/20 rounded-xl p-6 mb-4"
             >
               <div className="mb-4">
@@ -296,15 +341,51 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
                   return (
                     <motion.button
                       key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ 
+                        opacity: 1, 
+                        x: showResult && isSelected && !isCorrect ? [0, -10, 10, -10, 10, 0] : 0,
+                        scale: showResult && isCorrectOption ? [1, 1.05, 1] : 1
+                      }}
+                      transition={{ 
+                        opacity: { duration: 0.3, delay: 0.7 + (index * 0.1) },
+                        x: showResult && isSelected && !isCorrect ? {
+                          duration: 0.5,
+                          times: [0, 0.2, 0.4, 0.6, 0.8, 1]
+                        } : { duration: 0.3, delay: 0.7 + (index * 0.1) },
+                        scale: showResult && isCorrectOption ? {
+                          duration: 0.6,
+                          ease: "easeOut"
+                        } : {}
+                      }}
                       onClick={() => handleAnswer(index)}
                       disabled={showResult}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${optionStyle} ${
                         showResult ? 'cursor-default' : 'cursor-pointer'
+                      } ${showResult && isCorrectOption ? 'shadow-md shadow-green-500/20' : ''} ${
+                        showResult && isSelected && !isCorrect ? 'shadow-md shadow-red-500/20' : ''
                       }`}
                       whileHover={!showResult ? { scale: 1.01 } : {}}
                       whileTap={!showResult ? { scale: 0.99 } : {}}
                     >
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-sm ${
+                      <motion.div 
+                        animate={
+                          showResult && isCorrectOption ? {
+                            rotate: [0, 360],
+                            scale: [1, 1.2, 1]
+                          } : showResult && isSelected && !isCorrect ? {
+                            rotate: [0, -10, 10, -10, 10, 0]
+                          } : {}
+                        }
+                        transition={
+                          showResult && isCorrectOption ? {
+                            duration: 0.6,
+                            ease: "easeOut"
+                          } : {
+                            duration: 0.4
+                          }
+                        }
+                        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-sm ${
                         showResult && isSelected && isCorrect
                           ? 'bg-green-500 text-white'
                           : showResult && isSelected && !isCorrect
@@ -314,14 +395,26 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
                           : 'bg-white/10 text-gray-300'
                       }`}>
                         {optionLabel}
-                      </div>
+                      </motion.div>
                       <span className="text-white text-left flex-1 text-sm">{option}</span>
                       
                       {showResult && isCorrectOption && (
-                        <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <motion.div
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        </motion.div>
                       )}
                       {showResult && isSelected && !isCorrect && (
-                        <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        </motion.div>
                       )}
                     </motion.button>
                   );
@@ -331,13 +424,16 @@ export function QuizPage({ onNavigateHome, isMultiplayer = false }: QuizPageProp
           </AnimatePresence>
 
           {/* Exit Quiz Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 1.1 }}
             onClick={() => setShowExitModal(true)}
             className="w-full py-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/10 hover:text-white hover:border-white/30 transition-all flex items-center justify-center gap-2 group"
           >
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Exit Quiz</span>
-          </button>
+          </motion.button>
         </div>
       </div>
 

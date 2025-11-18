@@ -3248,6 +3248,10 @@
     opacity: 0;
   }
 
+  .opacity-5 {
+    opacity: .05;
+  }
+
   .opacity-30 {
     opacity: .3;
   }
@@ -4386,8 +4390,8 @@
   }
 
   @media (width >= 40rem) {
-    .sm\:w-16 {
-      width: calc(var(--spacing) * 16);
+    .sm\:w-24 {
+      width: calc(var(--spacing) * 24);
     }
   }
 
@@ -4476,8 +4480,8 @@
   }
 
   @media (width >= 48rem) {
-    .md\:w-24 {
-      width: calc(var(--spacing) * 24);
+    .md\:w-28 {
+      width: calc(var(--spacing) * 28);
     }
   }
 

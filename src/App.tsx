@@ -93,7 +93,7 @@ export default function App() {
   return (
     <div className="size-full flex bg-gradient-to-br from-[#1a2942] via-[#253854] to-[#2d4663] relative">
       {/* Animated starry background effect */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
+      <div className={`absolute inset-0 pointer-events-none ${currentPage === 'reader' ? 'opacity-5' : 'opacity-30'}`}>
         {[...Array(50)].map((_, i) => (
           <div
             key={i}
